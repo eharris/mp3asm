@@ -426,9 +426,9 @@ read_datasize (stream_t *stream)
   else /* sisize == 17 */
     if (stream->maj_version == 1) /* mpeg 1 mono */
       {
-	gr0_ch0_size = ((frame->info[2] & 0x1f) << 7) | (frame->info[3] >> 1);
-	gr1_ch0_size = ((frame->info[9] & 0x03) << 10) |
-	  (frame->info[10] << 2) | (frame->info[11] >> 6);
+        gr0_ch0_size = ((frame->info[2] & 0x3f) << 6) | (frame->info[3] >> 2);
+        gr1_ch0_size = ((frame->info[9] & 0x07) << 9) |
+	  (frame->info[10] << 1) | (frame->info[11] >> 7);
       }
     else /* mpeg 2 stereo */
       {
