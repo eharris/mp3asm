@@ -24,6 +24,13 @@
 #ifndef HAVE_FRAME_H
 #define HAVE_FRAME_H
 
+  typedef struct header_t
+  {
+    unsigned char head[4];
+    int pos;
+    int count;
+  } header_t;
+
 typedef struct frame_t
 {
   struct frame_t *prev;

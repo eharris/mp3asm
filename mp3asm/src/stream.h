@@ -40,6 +40,7 @@ typedef struct stream_t
   int copyright;
   int original;
   unsigned char *tag;
+  unsigned char *head;
   
   long count;
 

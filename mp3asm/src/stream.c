@@ -46,6 +46,7 @@ extern int write_tag_v1 (stream_t *stream, buffer_t *buffer);
 
 /* frame.c */
 
+extern int search_first_header (buffer_t *buffer, stream_t *stream, int *count, header_t **heads, int pos);
 extern void free_first_frame (stream_t *stream);
 extern int read_frame(stream_t *stream, buffer_t *filebuf, buffer_t *databuf);
 extern int process_frames (stream_t *stream, long startframe, long endframe);
@@ -109,9 +110,48 @@ free_stream(stream_t *stream)
 stream_t *
 read_stream (FILE *file)
 {
-  int eof = 0, eob;
+  int eof = 0, eob = -1, *count = tmalloc (sizeof (int)), pos = 0;
   buffer_t *filebuf = init_buf (FILE_BUF_SIZE * 1024), *databuf = init_buf (DATA_BUF_SIZE * 1024);
   stream_t *stream = init_stream ();
+  header_t **heads = tmalloc (sizeof (header_t *));
+  *heads = NULL;
+  *count = 0;
+
+  /* this stuff is ugly, i know - but hey, the whole prog is */
+  while (!eof && (eob < 0))
+    {      
+      switch (fill_buf_from_file (filebuf, file)) /* fill up the buf */
+	{
+	case -1:
+	  perror("read_stream ()");
+	  free_buf (filebuf);
+	  free_buf (databuf);
+	  free_stream (stream);
+	  return (NULL);
+	case 0:
+	  eof++;
+	}
+     switch ((eob = search_first_header(filebuf, stream, count, heads, pos)))
+	{
+	case -2:
+	  perror("read_stream ()");
+	  free_buf (filebuf);
+	  free_buf (databuf);
+	  free_stream (stream);
+	  return (NULL);
+	case -1:
+          pos += filebuf->used - 3;
+	  rem_buf (filebuf, filebuf->used - 3);
+          break;
+      	}
+    }
+  free(heads);
+  free(count);
+  if (eob > 512) 
+    fseek (file, (eob - 512), SEEK_SET);
+  else
+    fseek (file, 0, SEEK_SET);
+  rem_buf (filebuf, filebuf->used);
 
   while (!eof)
     {      
@@ -287,11 +327,12 @@ process_output (stream_t *stream)
   head[0] = frame->head[2] & 0x0d;
   head[1] = frame->head[3] & 0xcf;
 
-  while (frame->next)
+  while (frame)
     {
-      frame = frame->next;
+      frame->head[1] = frame->head[1] | 0x01; /* strip out eventual crc */
       frame->head[2] = (frame->head[2] & 0xf2) | head[0];
       frame->head[3] = (frame->head[3] & 0x30) | head[1];
+      frame = frame->next;
     }
 }
 

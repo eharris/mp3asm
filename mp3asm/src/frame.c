@@ -26,8 +26,8 @@
 #include "frame.h"
 #include "stream.h"
 
-
-/*#ifndef FRAME_DEBUG
+/*
+#ifndef FRAME_DEBUG
 #define FRAME_DEBUG
 #endif
 #ifndef SIDE_DEBUG
@@ -120,55 +120,47 @@ samestream (unsigned char head1[4], unsigned char head2[4])
  */
 
 int
-search_first_header (buffer_t *buffer, stream_t *stream)
+search_first_header (buffer_t *buffer, stream_t *stream, int *count, header_t **heads, int pos)
 {
-  int i = 0, count = 0, k;
+  int i = 0, k;
   unsigned char head[4];
-
-  typedef struct header_t
-  {
-    unsigned char head[4];
-    int count;
-  } header_t;
-
-  header_t *heads = NULL;
-  
+ 
   while (1)
     switch (read_buf(buffer, head, i, 4))
       {
       case 0:
 	sprintf(log.buf, "%s: No valid mp3header found in this buffer.\n", me);
 	print_log (10);
-	return(-1); /* fill the buffer */
+ 	return(-1); /* fill the buffer */
 	
       case 1:
 	if (head[0] == 0xff && isheader(head))
 	  {
-	    sprintf (log.buf, "%d: %x.%x.%x.%x\n", i, head[0], head[1], head[2], head[3]);
-	      print_log (10);
-	    for (k = 0; k < count; k++)
+	    for (k = 0; k < (*count); k++)
 	      {
-		if (samestream (head, heads[k].head))
+		if (samestream (head, (*heads)[k].head))
 		  {
-		    sprintf (log.buf, "other header: %x.%x.%x.%x, count = %d\n", heads[k].head[0], heads[k].head[1], heads[k].head[2], heads[k].head[3], heads[k].count);
+		    sprintf (log.buf, "other header: %x.%x.%x.%x, count = %d\n", (*heads)[k].head[0], (*heads)[k].head[1], (*heads)[k].head[2], (*heads)[k].head[3], (*heads)[k].count);
 		    print_log (10);
-		    if (heads[k].count == 3)
+		    if ((*heads)[k].count == 3)
 		      {
-			stream->last->head = tmalloc(4 * sizeof (unsigned char));
-			memcpy (stream->last->head, heads[k].head, 4);
-			free (heads);
-			return (1);
+                        int temp = (*heads)[k].pos;
+			stream->head = tmalloc(4 * sizeof (unsigned char));
+			memcpy (stream->head, (*heads)[k].head, 4);
+			free (*heads);
+			return (temp);
 		      }
-		    heads[k].count++;
+		    (*heads)[k].count++;
 		    break;
 		  }
 	      }
-	    if (k == count)
+	    if (k == (*count))
 	      {
-		count++;
-		heads = trealloc (heads, count * sizeof (header_t));
-		memcpy (heads[k].head, head, 4);
-		heads[k].count = 1;
+		(*count)++;
+		*heads = trealloc (*heads, (*count) * sizeof (header_t));
+		memcpy ((*heads)[k].head, head, 4);
+                (*heads)[k].pos = pos + i;
+		(*heads)[k].count = 1;
 	      }
 	  }
 	i++;
@@ -205,7 +197,7 @@ search_header (buffer_t *buffer, stream_t *stream)
       case 1:
 	if (head[0] == 0xff)
 	  {
-	    if(samestream(head, stream->first->head))
+	    if(samestream(head, stream->head))
 	      {
 		if (stream->last->head) /* first frame - already set */
 		  free (stream->last->head);
@@ -470,40 +462,29 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
     {
       stream->first = frame;
       stream->last = frame;
-
-      switch (search_first_header(filebuf, stream))
-	{
-	case -2:
-	  free_frame (stream, frame);
-	  return (-1); /* stop readin this file */
-	case -1:
-	  free_frame (stream, frame);
-	  return (0); /* end of buffer */
-	default:
-	  break;
-	}
-      temp = search_header(filebuf, stream);
     }
   else
     {
       frame->prev = stream->last;
       stream->last->next = frame;
       stream->last = frame;
-      
-      switch (temp = search_header(filebuf, stream))
-	{
-	case -2:
-	  free_frame (stream, frame);
-	  return (-1); /* stop readin this file */
-	case -1:
-	  free_frame (stream, frame);
-	  return (0); /* end of buffer */
-	default:
-	  break;
-	}
+    }      
+  switch (temp = search_header(filebuf, stream))
+    {
+    case -2:
+      free_frame (stream, frame);
+      return (-1); /* stop readin this file */
+    case -1:
+      free_frame (stream, frame);
+      return (0); /* end of buffer */
+    default:
+      break;
     }
+  
   parse_frame_header(stream);
   
+  sprintf (log.buf, "Reading frame %ld\n", stream->count + 1);
+  print_log (10);  
 #ifdef FRAME_DEBUG
   sprintf(log.buf, "Frame %ld: %d kbps, header to header size = %d\n", stream->count + 1, frame->kbps, frame->hsize);
   print_log (10);
@@ -525,7 +506,7 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
   else
     {
       frame->info = tmalloc(stream->isize * sizeof(unsigned char));
-      switch (read_buf (filebuf, frame->info, 4 + temp, stream->isize))
+      switch (read_buf (filebuf, frame->info, 4 + temp + 2*stream->crc, stream->isize))
 	{
 	case -1:
 	  return (-1); /* stop readin this file */
@@ -555,8 +536,8 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
       
       frame->dsize = read_datasize(stream);
       
-      if (filebuf->used <= frame->hsize)
-	if (!filebuf->eof || (filebuf->eof && (frame->dsize + stream->isize + 4) > (databuf->used + filebuf->used)))
+      if (filebuf->used <= (frame->hsize + 3))
+	if (!filebuf->eof || (filebuf->eof && (frame->dsize + stream->isize + 4 + 2*stream->crc) > (databuf->used + filebuf->used)))
 	  {
 	    free_frame(stream, frame);
 	    return (0);
@@ -564,12 +545,12 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
 
       if (temp)
 	{
-	  sprintf (log.buf, "copied %d from filebuf to databuf\n", temp);
-	  print_log (10);
+	  sprintf (log.buf, "Too much space between headers: %d bytes!\n", temp);
+	  print_all (0);
 	  cut_buf(filebuf, databuf, temp);
 	}
 
-      rem_buf(filebuf, 4 + stream->isize);
+      rem_buf(filebuf, 4 + stream->isize + 2 * stream->crc);
 
 #ifdef FRAME_DEBUG
       sprintf(log.buf, "            Backref: %d, datasize: %d\n", frame->backref, frame->dsize);
@@ -580,23 +561,25 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
 	{
 	  sprintf(log.buf, "Error: bad stream formattin, bad backref!\n");
 	  print_all (0);
-	  free_frame (stream, frame);
-	  return (-1);
+          frame->dsize = 0;
+	 /* free_frame (stream, frame);
+	    return (-1); */
 	}
-      
-      rem_buf(databuf, databuf->used - frame->backref);
+      else
+	rem_buf(databuf, databuf->used - frame->backref);
 
-      if (filebuf->used < (frame->hsize - 4 - stream->isize))
+      if (filebuf->used < (frame->hsize - 4 - stream->isize - 2*stream->crc))
 	cut_buf(filebuf, databuf, filebuf->used);
       else
-	cut_buf(filebuf, databuf, frame->hsize - 4 - stream->isize);
+	cut_buf(filebuf, databuf, frame->hsize - 4 - stream->isize - 2*stream->crc);
       
-      if (databuf->used < frame->dsize)
+      if (databuf->used < frame->dsize) /*skip frame data!!!*/
 	{
 	  sprintf(log.buf, "Error: bad stream formattin, databuffer underrun.\n");
-	  print_all (0);
-	  free_frame (stream, frame);
-	  return (-1);
+ 	  print_all (0);
+          frame->dsize = 0;
+	 /* free_frame (stream, frame);
+	    return (-1);*/
 	}
       if (frame->dsize)
 	{
@@ -610,7 +593,8 @@ read_frame (stream_t *stream, buffer_t *filebuf, buffer_t *databuf)
   sprintf (log.buf, "frame %ld; prev: %p, next: %p, info: %p, data: %p\n", stream->count + 1, frame->prev, frame->next, frame->info, frame->data);
   print_log (10);
 #endif
-  
+
+
   stream->count++;
   if (!filebuf->used && filebuf->eof)
     return (0);

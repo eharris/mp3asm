@@ -19,9 +19,10 @@ the only real difference between encoders is the filterbanks.
   And offcourse, u dont have to waste precious cycles on the whole lengthy
 process.
   Yes indeed, with wavediting programs u can edit right up to the
-millisecond, or even better. But to be honest, an mpeg 1 layer 3
-file at 44.1khz has 38.28125 frames per second, which means u can cut right
-down to 26.12244898 ms.
+millisecond, or even better. But to be honest, an 128kbps mpeg 1 layer 3
+file has 25 frames per second, which means u can cut right down to
+40ms. If u dont mind the quality of a 128kbps file, how can u mind a few
+millisecs?
   So when this app is up and running theres no more reason to waste a
 perfectly good rip cos of a few bad starting frames or a long lead out.
 At this point i even believe it should be possible to provide for fading
@@ -43,21 +44,18 @@ the stream. This is a valid practice which all encoders do, i often see rips whi
 80+ empty frames. I believe this is done for id3v2, which has all the id3 frames burried
 inside the wasted space of a stream. Please be carefull with -v & -l, with
 verbosity >= 10 mp3asm generates huge logfiles.
- Do not worry about overwriting of files, mp3asm doesn't, but do keep track of ur
-available hd space.
- Most of the time this program should be used to remove ticks/blips or to
+Most of the time this program should be used to remove ticks/blips or to
 remove lead in/outs that r annoying. Sometimes u get these bad rips with
 the mistery track followin after 5 mins of silence... that sort of stuff.
 
 State of the program:
 ---------------------
 
- It works on almost every file u feed it, except for files with a bad backref,
-this still needs to be properly implemented.
- Can work with id3v1 tags, merges streams, properly removes empty frames from
-the stream.
- Very hard and daunting to use due to the restricting textmode interface. Therefor
-most of the todo list is for the gtk version.
+ It is able to discard chosen frames from a stream and write them to a new
+file or it can be used to make several streams into 1. I still have to
+test for the validity of fading in/out by writing the gain values. After
+that ill implement mpglib & alsa 0.9.0 support, and if im still in the
+mood ill build a petite gtk frontend for it.
 
 Installation:
 -------------
