@@ -1,0 +1,70 @@
+README:
+-------
+Overall whine:
+--------------
+  (/me just loves the sound of his own voice)
+
+  Quite a usefull lil app in my honest opinion.
+
+  Why?
+
+  Well, most ppl probably prefer decoding, wav editing, reencoding, but
+that has consequences.
+  Encoders use advanced filtering to create audio data thats easy to
+compress so that ppl can hardly tell the difference (depending on BR
+offcourse) and then they compress that filtered audiodata. Now filtering
+once from original full range unfiltered audio will provide the nicest
+result. Every subsequent filtering will result in more loss of data, cos
+the only real difference between encoders is the filterbanks.
+  And offcourse, u dont have to waste precious cycles on the whole lengthy
+process.
+  Yes indeed, with wavediting programs u can edit right up to the
+millisecond, or even better. But to be honest, an mpeg 1 layer 3
+file at 44.1khz has 38.28125 frames per second, which means u can cut right
+down to 26.12244898 ms.
+  So when this app is up and running theres no more reason to waste a
+perfectly good rip cos of a few bad starting frames or a long lead out.
+At this point i even believe it should be possible to provide for fading
+in/out, i aint certain yet actually :)
+ I have no clue whatsoever on why Olli fromme halted development back in '97.
+Maybe cos mp3s were a rarity back then? Maybe some personal reason. I will
+prolly never know. What I do know is that he had an unbelievable idea and he
+wrote a program that did the job very well.
+
+Usage:
+------
+
+ Ok, for starters, get urself mpg123... U can use -k/n to choose which frames to play.
+This helps u pinpoint which frames u can actually discard. Then feed those boundaries
+into mp3asm and it will do it for u.
+ If u, for example want 500 frames, u will probably get 501 frames, cos mp3asm often adds
+an empty frame (only when needed) to the start of the stream in order to decently format
+the stream. This is a valid practice which all encoders do, i often see rips which have
+80+ empty frames. I believe this is done for id3v2, which has all the id3 frames burried
+inside the wasted space of a stream. Please be carefull with -v & -l, with
+verbosity >= 10 mp3asm generates huge logfiles.
+ Do not worry about overwriting of files, mp3asm doesn't, but do keep track of ur
+available hd space.
+ Most of the time this program should be used to remove ticks/blips or to
+remove lead in/outs that r annoying. Sometimes u get these bad rips with
+the mistery track followin after 5 mins of silence... that sort of stuff.
+
+State of the program:
+---------------------
+
+ It works on almost every file u feed it, except for files with a bad backref,
+this still needs to be properly implemented.
+ Can work with id3v1 tags, merges streams, properly removes empty frames from
+the stream.
+ Very hard and daunting to use due to the restricting textmode interface. Therefor
+most of the todo list is for the gtk version.
+
+Installation:
+-------------
+
+ Plain ./configure, make & make install should do the trick. This program has only been
+tested on standard x86 linux, so be warned. Any hints on making it more portable will always
+be very welcome. There should not be feared for input files. Mp3asm dusnt overwrite old files.
+In this preliminary version that could be quite a hazard for ur original files. 
+
+Enjoy ur mp3s!

@@ -1,0 +1,60 @@
+Changelog for mp3asm:
+---------------------
+
+Todo:
+ - flags for changing headers
+ - add/remove crc
+ - fading
+ - implement Xing vbr header
+ - implement id3 v2
+ - link it to mpglib & alsa
+ - gtk frontend
+
+0.1.2: (22/03/01)
+------
+        - cleanin up process stream
+	- removed remove_dead_frames, remove_prev_frames,
+	  remove_next_frames
+	  they became obsolete due to process_frames
+	- writing merge streams
+	- unified headers implemented
+	- cleaned up output + a few bugs
+
+0.1.1: (19/03/01)
+------
+	- removed dependency of glib, guint8 = unsigned char
+	- implementing the standard configure
+	- parsing now uses callbacks
+	- standard vbr apparently worked all the time!!!!
+	- implemented advanced header search
+	  u know those files where some brainless kid just deleted
+	  bytes till he stopped hearing the blip or whatever...
+	  well, mp3asm can now take that mp3 and pour it in a decent
+	  shape. 
+	- reads id3 v1 tag
+	- writes id3 v1 tag
+	- correctly calculates avg br
+
+0.1.0:
+------
+	- Parsing commandline should be somewhat ok
+	- The circular buffer implementation seems to be workling nicely
+	- layer 3 streams seem to load.
+	- layer 2 too :)
+	- writing stream works np
+	- can cut frames from a stream 	
+
+0.0.1:
+------
+Olli Fromme's magnificent idea ended abruptly in october of '97.
+More than 3ys before some wanker realised that mp3 files r a sequence of
+frames, and that it should be possible to edit at frame level and in the
+end stumbled over this lil gem. Although it worked on just a few files it
+was way ahead of its time :) Too bad olli didnt continue development.
+
+So this would be a fair judgement:
+ 
+Almost working, counts on an empty frame to exist in the stream.
+Pretty nifty, too bad it was almost forgotten.
+Prolly, no not prolly, it just plainly is the most useful mp3 tool ive
+ever seen.

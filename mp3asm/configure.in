@@ -1,0 +1,27 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT(src)
+AM_INIT_AUTOMAKE(mp3asm, 0.1.2)
+AC_PROG_CC
+
+dnl Checks for programs.
+AC_PROG_LN_S
+
+CFLAGS="-g -O -Wall"
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(unistd.h)
+ 
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+dnl Checks for library functions.
+
+AC_OUTPUT([
+Makefile
+src/Makefile
+])
